@@ -193,7 +193,9 @@ small{color:var(--muted)}.hidden{display:none!important}
 <script>
 const SUPABASE_URL="https://kryurnfjxpplrcuaigxa.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY="sb_publishable_7R75uh9wm9ofG62-dzcVbA_NefJYP0x";
-const supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
+// Cloud is optional for core app use: a blocked CDN must never disable local features.
+const supabaseClient=(window.supabase && typeof window.supabase.createClient==='function')
+  ? window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY) : null;
 let currentUser=null, cloudReady=false, cloudIds={transactions:new Set(),debts:new Set(),receivables:new Set()};
 const KEY='mymoney_v1';
 const today=()=>new Date().toISOString().slice(0,10);
@@ -209,4 +211,4 @@ function recToRow(x){return {id:x.id,user_id:currentUser.id,person:x.name,descri
 function rowToTransaction(x){return {id:x.id,date:x.transaction_date,type:x.transaction_type,category:x.category||'',description:x.description||'',person:x.person||'',notes:x.notes||'',amount:Number(x.amount)};}
 function rowToDebt(x){return {id:x.id,name:x.creditor,type:x.description||'Other',original:Number(x.original_amount),balance:Number(x.outstanding_amount),rate:Number(x.interest_rate)||0,due:x.due_date||'',notes:x.notes||''};}
 function rowToRec(x){const notes=x.notes||'';const m=notes.match(/Given (\d{4}-\d{2}-\d{2})/);return {id:x.id,name:x.person,reason:x.description||'',original:Number(x.original_amount),balance:Number(x.outstanding_amount),date:m?m[1]:'',due:x.due_date||'',notes:notes.replace(/^Given \d{4}-\d{2}-\d{2} \|? ?/,'')};}
-async function fetchCloud(){const [tr,de,re,pr]=await Promise.all([supabaseClient.from('transactions').select('*').order('transaction_date',{ascending:false}),supabaseClient.from('debts').select('*').order('created_at',{ascending:true}),supabaseClient.from('receivables').select('*').order('created_at
+async function fetchCloud(){if(!supabaseClient)throw new Error('Supabase library did not load. Check your internet connection and re
